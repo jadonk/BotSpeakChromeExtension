@@ -41,6 +41,7 @@
 		* Converts a string to an array buffer
 		*
 		* @private
+		* @see   https://github.com/GoogleChrome/chrome-app-samples/blob/master/tcpserver/tcp-server.js
 		* @param {String} str The string to convert
 		* @param {Function} callback The function to call when conversion is complete
 		*/
@@ -54,7 +55,7 @@
 		}
 
  		//Create a TCP connection with the given 
- 		var openTCP = function(hostname, port){
+ 		var sendTCPCmd = function(hostname, port, cmd){
  			chrome.socket.create("tcp", null, function(createInfo){
  				SOCKET_ID = createInfo.socketId
  				if(SOCKET_ID == -1){
@@ -62,18 +63,22 @@
  					return;
  				}
 
- 				chrome.socket.connect(SOCKET_ID, hostname, 9999, function(result){
- 					console.log('Connection result: ');
- 					console.log(result);
-
-	 				_stringToArrayBuffer('GET VER\n', function(arrayBuffer){
-	 					console.log(arrayBuffer);
+ 				chrome.socket.connect(SOCKET_ID, hostname, port, function(result){
+	 				
+	 				console.log('result: ' + result);
+	 				
+	 				_stringToArrayBuffer(cmd + '\n', function(arrayBuffer){
 	 					
 	 					chrome.socket.write(SOCKET_ID, arrayBuffer, function(writeInfo){
-							console.log('writeInfo: ');
-	 						console.log(writeInfo);
+	 						
+	 						console.log('writeInfo: ' + writeInfo);
+							
+							chrome.socket.read(SOCKET_ID, null, function(readInfo){
+
+								console.log('readInfo: ' + readInfo);
+
+							})	
 	 					})
-						
 	 				})
  				})
  			})
@@ -82,7 +87,10 @@
 
  		//Test the connection by sending "GET VER" over TCP/IP
  		$('#test_tcp_button').click(function(){
- 			openTCP('127.0.0.1');
+ 			var device_ip    = $('#device_ip').val()
+ 			var device_port  = $('#device_port').val()
+ 			var botspeak_cmd = 'GET VER';
+ 			sendTCPCmd(botspeak_cmd, device_port, cmd);
  		})
 
  		//Try to send GET VER to serial device
