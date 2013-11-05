@@ -4,7 +4,7 @@
 	"description": "Use the BotSpeak Chrome Extension to interface and program your favorite devices.",
 	"version": "1.0",
 	"minimum_chrome_version": "24",
-	"permissions": [ "serial", { "socket": ["tcp-connect:*:*", "tcp-listen"] } ],
+	"permissions": [ "storage", "serial", { "socket": ["tcp-connect:*:*", "tcp-listen"] } ],
 	"app": {
 		"background": {
 			"scripts": [ "main.js" ]

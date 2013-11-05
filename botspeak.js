@@ -58,24 +58,40 @@
  		var sendTCPCmd = function(hostname, port, cmd){
  			chrome.socket.create("tcp", null, function(createInfo){
  				SOCKET_ID = createInfo.socketId
+ 				
  				if(SOCKET_ID == -1){
  					$('#connection_status').html('Could not connect over TCP: Socket ID = -1.');
  					return;
  				}
 
+ 				if(hostname == undefined || hostname == ''){
+ 					hostname = '127.0.0.1';
+ 				}
+
+ 				if(port == undefined || port == ''){
+ 					port = parseInt(9999);
+ 				}
+
+ 				console.log(hostname)
+ 				console.log(port)
+ 				console.log(SOCKET_ID)
+
  				chrome.socket.connect(SOCKET_ID, hostname, port, function(result){
 	 				
-	 				console.log('result: ' + result);
+	 				console.log('result: ');
+	 				console.log(result);
 	 				
 	 				_stringToArrayBuffer(cmd + '\n', function(arrayBuffer){
 	 					
 	 					chrome.socket.write(SOCKET_ID, arrayBuffer, function(writeInfo){
 	 						
-	 						console.log('writeInfo: ' + writeInfo);
+	 						console.log('writeInfo: ');
+	 						console.log(writeInfo);
 							
 							chrome.socket.read(SOCKET_ID, null, function(readInfo){
 
-								console.log('readInfo: ' + readInfo);
+								console.log('readInfo: ');
+								console.log(readInfo)
 
 							})	
 	 					})
@@ -90,7 +106,7 @@
  			var device_ip    = $('#device_ip').val()
  			var device_port  = $('#device_port').val()
  			var botspeak_cmd = 'GET VER';
- 			sendTCPCmd(botspeak_cmd, device_port, cmd);
+ 			sendTCPCmd(device_ip, device_port, botspeak_cmd);
  		})
 
  		//Try to send GET VER to serial device
@@ -136,6 +152,29 @@
 	 			$('#serial_devices').hide();
 	 		}
 	 	})
+
+	 	//Setup the terminal
+	    $('#terminal').terminal(function(command, term) {
+	        if (command !== '') {
+	            try {
+	                var result = command;
+	                if (result !== undefined) {
+	                    term.echo(new String(result));
+	                }
+	            } catch(e) {
+	                term.error(new String(e));
+	            }
+	        } else {
+	           term.echo('');
+	        }
+	    }, {
+	        greetings: 'BotSpeak Interpreter',
+	        name: 'botspeak_demo',
+	        height: 200,
+	        width: 400,
+	        prompt: '> '
+			}
+	    );
  	})
 
 })(jQuery)

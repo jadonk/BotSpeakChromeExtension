@@ -1,0 +1,26 @@
+#headers{
+	clear: both; 
+	display: block; 
+	height: 75px; 
+	border-bottom: 1px solid black;
+}
+
+#select_device{
+	float: left; 
+	display: inline; 
+	width: 325px;
+	margin-left: 10px;
+}
+
+#connect_device{
+	float: left; 
+	display: inline; 
+	margin-left: 10px; 
+	width: 350px;
+}
+
+#botspeak_cmd{
+    display: inline;
+    float: left;
+    margin-left: 10px;
+}

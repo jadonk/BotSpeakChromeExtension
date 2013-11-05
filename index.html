@@ -4,15 +4,19 @@
 	<meta charset="utf-8">
 	<title>BotSpeak Chrome Extension</title>
 	<script type="text/javascript" src="jquery.min.js"></script>
+	<script type="text/javascript" src="jquery.terminal-0.7.7.js"></script>
 	<script type="text/javascript" src="botspeak.js"></script>
+
+	<link rel="stylesheet" type="text/css" href="css/terminal.css">
+	<link rel="stylesheet" type="text/css" href="css/main.css">
 </head>
 <body>
-	<div id="headers" style="clear: both; display: block; height: 75px; border-bottom: 1px solid black;">
+	<div id="headers">
 		<a href="http://www.botspeak.org"><img src="images/botspeak_logo.png" style="float:left;"></a>
 		<a href="http://ceeo.tufts.edu"><img src="images/ceeo-logo.png" style="float:right;"></a>
 	</div>
-	<section id="main" style="float: left; display: inline; width: 350px; margin-left: 10px">
-		<h1> Step 1: Connect to a device: </h1>
+	<section id="select_device">
+		<h1> Step 1: Select a device: </h1>
 		<select id="device_selection">
 			<option id="1" value="RASPBERRY_PI">Raspberry Pi</option>
 			<option id="2" value="BEAGLEBONE_BLACK">Beaglebone Black</option>
@@ -23,10 +27,16 @@
 		<div id="device_image" style="hieght: 300px;"><img src="images/rpi.jpg" /></div>
 	</section>
 
-	<section id="interpreter" style="float: left; display: inline; margin-left: 10px; width: 350px;">
+	<section id="connect_device">
 		<h1> Step 2: Connect to the device </h1>
 		<div id="tcp_devices">Type in device IP address: <input id="device_ip" type="text" /><button id="test_tcp_button">Test Connection</button></div>
 		<div id="serial_devices" style="display: none;">USB Serial: <select id="serial_ports"></select><button id="test_serial_button">Test Connection</button></div>
 		<div id="connection_status"></div>
 	</section>
+
+	<section id="botspeak_cmd">
+		<h1> Step 3: Code! </h1>
+		<div id="terminal"></div>
+	</section>
+
 </body>
