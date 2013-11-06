@@ -4,18 +4,24 @@
  * @version 1.0
  */
 
+var DEVICE_IMAGES = {
+	'ARDUINO_UNO'      : 'images/arduino.jpg',
+	'BEAGLEBONE_BLACK' : 'images/beaglebone.jpg',
+	'PROTO_SNAP'       : 'images/protosnap.png',
+	'RASPBERRY_PI'     : 'images/rpi.jpg'
+};
+var TCP_DEVICES    = ['BEAGLEBONE_BLACK', 'RASPBERRY_PI'];
+var SERIAL_DEVICES = ['ARDUINO_UNO', 'PROTO_SNAP'];
+var TCP_SUCCESS    = false;
+var SERIAL_TEST    = -1;
+var CONNECTION_ID  = -1;
+var SOCKET_ID      = -1;
+var BOTSPEAK_VERSION = ['1.0'];
+var SERIAL_PORTS = '';
+var CMD_RESULT   = '';
+var DEVICE = { 'IP': null, 'PORT': null};
+
 (function($){
-	var DEVICE_IMAGES = {
-		'ARDUINO_UNO'      : 'images/arduino.jpg',
-		'BEAGLEBONE_BLACK' : 'images/beaglebone.jpg',
-		'PROTO_SNAP'       : 'images/protosnap.png',
-		'RASPBERRY_PI'     : 'images/rpi.jpg'
-	}
-	var TCP_DEVICES    = ['BEAGLEBONE_BLACK', 'RASPBERRY_PI']
-	var SERIAL_DEVICES = ['ARDUINO_UNO', 'PROTO_SNAP']
-	var CONNECTION_ID  = -1
-	var SOCKET_ID      = -1
-	var SERIAL_PORTS
 
  	$( document ).ready(function(){
 
@@ -54,6 +60,23 @@
 			f.readAsArrayBuffer(bb);
 		}
 
+		/**
+		 * Converts an array buffer to a string
+		 *
+		 * @see   https://github.com/GoogleChrome/chrome-app-samples/blob/master/tcpserver/tcp-server.js
+		 * @private
+		 * @param {ArrayBuffer} buf The buffer to convert
+		 * @param {Function} callback The function to call when conversion is complete
+		 */
+		function _arrayBufferToString(buf, callback) {
+			var bb = new Blob([new Uint8Array(buf)]);
+			var f = new FileReader();
+			f.onload = function(e) {
+				callback(e.target.result);
+			};
+			f.readAsText(bb);
+		}
+
  		//Create a TCP connection with the given 
  		var sendTCPCmd = function(hostname, port, cmd){
  			chrome.socket.create("tcp", null, function(createInfo){
@@ -72,41 +95,37 @@
  					port = parseInt(9999);
  				}
 
- 				console.log(hostname)
- 				console.log(port)
- 				console.log(SOCKET_ID)
-
  				chrome.socket.connect(SOCKET_ID, hostname, port, function(result){
-	 				
-	 				console.log('result: ');
-	 				console.log(result);
-	 				
+	 				console.log('CMD: ' + cmd);
 	 				_stringToArrayBuffer(cmd + '\n', function(arrayBuffer){
-	 					
 	 					chrome.socket.write(SOCKET_ID, arrayBuffer, function(writeInfo){
-	 						
-	 						console.log('writeInfo: ');
-	 						console.log(writeInfo);
-							
 							chrome.socket.read(SOCKET_ID, null, function(readInfo){
-
-								console.log('readInfo: ');
-								console.log(readInfo)
-
-							})	
+								_arrayBufferToString(readInfo.data, function(data){
+									console.log('RESULT: ');
+									console.log(data);
+									CMD_RESULT = data;
+								});
+							})
 	 					})
 	 				})
  				})
  			})
  			chrome.socket.destroy(SOCKET_ID);
+ 			return CMD_RESULT;
  		}
 
- 		//Test the connection by sending "GET VER" over TCP/IP
+ 		//Test the TCP connection by sending "GET VER" over TCP/IP
  		$('#test_tcp_button').click(function(){
  			var device_ip    = $('#device_ip').val()
  			var device_port  = $('#device_port').val()
  			var botspeak_cmd = 'GET VER';
- 			sendTCPCmd(device_ip, device_port, botspeak_cmd);
+ 			var version = sendTCPCmd(device_ip, device_port, botspeak_cmd);
+ 			if(  $.inArray(version, BOTSPEAK_VERSION) != -1 ){
+ 				TCP_SUCCESS = true;
+ 				DEVICE['IP']   = device_ip
+ 				DEVICE['PORT'] = device_port
+ 				$('#connection_status').html('<p style="color: green;">' + version + '</p>')
+ 			}
  		})
 
  		//Try to send GET VER to serial device
@@ -153,14 +172,28 @@
 	 		}
 	 	})
 
-	 	//Setup the terminal
+	 	//Setup the terminal interface
 	    $('#terminal').terminal(function(command, term) {
 	        if (command !== '') {
 	            try {
-	                var result = command;
-	                if (result !== undefined) {
-	                    term.echo(new String(result));
-	                }
+	            	var device_ip = $('#device_ip').val()
+	            	
+	            	console.log(DEVICE);
+	            	console.log(command);
+
+					console.log('PREV CMD_RESULT: ');
+	                console.log(CMD_RESULT);
+	                
+	                setTimeout(function(){
+	                	sendTCPCmd(device_ip, 9999, command);
+		                if (CMD_RESULT !== undefined) {
+		                    term.echo(new String(CMD_RESULT));
+							
+							console.log('PREV CMD_RESULT: ');
+			                console.log(CMD_RESULT);
+		                }
+	                }, 1000);
+
 	            } catch(e) {
 	                term.error(new String(e));
 	            }
@@ -168,9 +201,10 @@
 	           term.echo('');
 	        }
 	    }, {
+	        enabled: false,
 	        greetings: 'BotSpeak Interpreter',
 	        name: 'botspeak_demo',
-	        height: 200,
+	        height: 300,
 	        width: 400,
 	        prompt: '> '
 			}
