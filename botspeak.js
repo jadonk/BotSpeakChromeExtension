@@ -10,13 +10,15 @@ var DEVICE_IMAGES = {
 	'PROTO_SNAP'       : 'images/protosnap.png',
 	'RASPBERRY_PI'     : 'images/rpi.jpg'
 };
+var TCP_DEVICE_SELECTED    = true; //Since the default is Raspberry Pi
+var SERIAL_DEVICE_SELECTED = false;
 var TCP_DEVICES    = ['BEAGLEBONE_BLACK', 'RASPBERRY_PI'];
 var SERIAL_DEVICES = ['ARDUINO_UNO', 'PROTO_SNAP'];
 var TCP_SUCCESS    = false;
 var SERIAL_TEST    = -1;
 var CONNECTION_ID  = -1;
 var SOCKET_ID      = -1;
-var BOTSPEAK_VERSION = ['1.0'];
+var BOTSPEAK_VERSION = ['1.0', '9'];
 var SERIAL_PORTS = '';
 var CMD_RESULT   = '';
 var DEVICE = { 'IP': null, 'PORT': null};
@@ -25,7 +27,7 @@ var DEVICE = { 'IP': null, 'PORT': null};
 
  	$( document ).ready(function(){
 
- 		//Get the serial ports
+ 		//Get the serial ports every 10 seconds in case thing get attached
  		chrome.serial.getPorts(function(ports){
 
 			 SERIAL_PORTS = ports.filter(function(port) {
@@ -36,10 +38,10 @@ var DEVICE = { 'IP': null, 'PORT': null};
 				 var port_options = ''
 
 				 SERIAL_PORTS.forEach(function(port){
-				 	port_options = '<option value="' + port + '">' + port + '</div>';
+				 	port_options += '<option value="' + port + '">' + port + '</div>';
 				 })
 
-				 $('#serial_ports').append(port_options);
+				 $('#serial_ports').html(port_options);
 			 }
  		});
 
@@ -77,13 +79,20 @@ var DEVICE = { 'IP': null, 'PORT': null};
 			f.readAsText(bb);
 		}
 
- 		//Create a TCP connection with the given 
- 		var sendTCPCmd = function(hostname, port, cmd){
+ 		/**
+ 		 * Send a command over TCP/IP
+ 		 * 
+ 		 * @string hostname - IP address or hostname of the device to connect to. Default: 127.0.0.1 (localhost)
+ 		 * @int port   - The port to connect on. Default is 9999.
+ 		 * @string cmd - The command to send over TCP/IP
+ 		 * @callback   - callback of the form callback(arrayBufferResult) where ArrayBufferResult is an arrayBuffer of the data read back via TCP/IP
+ 		 */
+ 		var sendTCPCmd = function(hostname, port, cmd, callback){
  			chrome.socket.create("tcp", null, function(createInfo){
  				SOCKET_ID = createInfo.socketId
  				
  				if(SOCKET_ID == -1){
- 					$('#connection_status').html('Could not connect over TCP: Socket ID = -1.');
+ 					$('#tcp_devices').append('<p style="color: red;">Could not connect over TCP: Socket ID = -1.</p>');
  					return;
  				}
 
@@ -92,26 +101,21 @@ var DEVICE = { 'IP': null, 'PORT': null};
  				}
 
  				if(port == undefined || port == ''){
- 					port = parseInt(9999);
+ 					port = 9999;
  				}
 
  				chrome.socket.connect(SOCKET_ID, hostname, port, function(result){
 	 				console.log('CMD: ' + cmd);
-	 				_stringToArrayBuffer(cmd + '\n', function(arrayBuffer){
+	 				_stringToArrayBuffer(cmd + '\r\n', function(arrayBuffer){
 	 					chrome.socket.write(SOCKET_ID, arrayBuffer, function(writeInfo){
 							chrome.socket.read(SOCKET_ID, null, function(readInfo){
-								_arrayBufferToString(readInfo.data, function(data){
-									console.log('RESULT: ');
-									console.log(data);
-									CMD_RESULT = data;
-								});
+								callback(readInfo.data);
 							})
 	 					})
 	 				})
  				})
  			})
  			chrome.socket.destroy(SOCKET_ID);
- 			return CMD_RESULT;
  		}
 
  		//Test the TCP connection by sending "GET VER" over TCP/IP
@@ -119,35 +123,70 @@ var DEVICE = { 'IP': null, 'PORT': null};
  			var device_ip    = $('#device_ip').val()
  			var device_port  = $('#device_port').val()
  			var botspeak_cmd = 'GET VER';
- 			var version = sendTCPCmd(device_ip, device_port, botspeak_cmd);
- 			if(  $.inArray(version, BOTSPEAK_VERSION) != -1 ){
- 				TCP_SUCCESS = true;
- 				DEVICE['IP']   = device_ip
- 				DEVICE['PORT'] = device_port
- 				$('#connection_status').html('<p style="color: green;">' + version + '</p>')
- 			}
+ 			sendTCPCmd(device_ip, device_port, botspeak_cmd, function(arrayBufferResult){
+				_arrayBufferToString(arrayBufferResult, function(version){
+		 			console.log('version: ')
+		 			console.log(version)
+		 			if(  $.inArray(version, BOTSPEAK_VERSION) != -1 ){
+		 				TCP_SUCCESS = true;
+		 				DEVICE['IP']   = device_ip
+		 				DEVICE['PORT'] = device_port
+		 				$('#tcp_devices').append('<p style="color: green;">Connection successful! BotSpeak Version: ' + version + '</p>')
+		 			}else{
+		 				$('#tcp_devices').append('<p style="color: red;"> Connection Error: ' + version + '</p>')
+		 			}
+				});
+ 			});
  		})
 
- 		//Try to send GET VER to serial device
- 		var onSerialOpen = function(openInfo){
- 			console.log(openInfo);
- 			CONNECTION_ID = openInfo.connectionId
-			if (CONNECTION_ID == -1) {
-			    alert('Could not connect to serial');
-			    return;
-			}
- 		}
-
- 		//opens the serial connection
-		var testSerialConn = function() {
-			var port = $('#serial_ports').val();
+ 		/**
+ 		 * Send a serial comand
+ 		 * @param serial_cmd ArrayBuffer of TinySpeak commands
+ 		 */
+		var sendSerialCmd = function(port, serial_cmd) {
+			
 			console.log(port)
-			chrome.serial.open(port, onSerialOpen);
+			
+			chrome.serial.open(port, null, function(openInfo){
+	 			CONNECTION_ID = openInfo.connectionId
+				if (CONNECTION_ID == -1) {
+				    console.log('Could not connect to serial');
+				    return;
+				}
+				chrome.serial.write(CONNECTION_ID, serial_cmd, function(writeInfo){
+					
+					console.log('writeInfo: ');
+					console.log(writeInfo);
+					
+					chrome.serial.read(CONNECTION_ID, 8, function(readInfo){
+						console.log('serial readinfo: ');
+						console.log(readInfo)
+
+						var uint8View = new Uint8Array(readInfo.data);
+						console.log('serial uint8View: ');
+						console.log(uint8View);
+						
+						
+						console.log('------------');
+					})
+				})
+			});
+			chrome.serial.close(CONNECTION_ID, function(result){ console.log('Serial closed: ' + result) });
 		};
 
 		//test serial connection
 		$('#test_serial_button').click(function(){
-			testSerialConn();
+			
+			//Get TinySpeak from LabView TCP server
+			sendTCPCmd(null, null, 'SET DIO[13], 1', function(labview_result){
+				var uint8View = new Uint8Array(labview_result);
+				
+				console.log('serial command: ');
+				console.log(uint8View);
+				
+				var port = $('#serial_ports').val();
+				sendSerialCmd(port, labview_result);
+			});
 		})
 
  		//Show device info
@@ -160,39 +199,58 @@ var DEVICE = { 'IP': null, 'PORT': null};
 	 		
 	 		//Show/hide tcp/ip serial inputs
 	 		if( $.inArray(device, TCP_DEVICES) != -1 ){
+	 			TCP_DEVICE_SELECTED = true;
 	 			$('#tcp_devices').show();
 	 		}else{
+	 			TCP_DEVICE_SELECTED = false;
 	 			$('#tcp_devices').hide();
 	 		}
 
 	 		if( $.inArray(device, SERIAL_DEVICES) != -1 ){
+	 			SERIAL_DEVICE_SELECTED = true;
 	 			$('#serial_devices').show();
 	 		}else{
+	 			SERIAL_DEVICE_SELECTED = false;
 	 			$('#serial_devices').hide();
 	 		}
 	 	})
 
 	 	//Setup the terminal interface
 	    $('#terminal').terminal(function(command, term) {
+	        
 	        if (command !== '') {
 	            try {
-	            	var device_ip = $('#device_ip').val()
-	            	
-	            	console.log(DEVICE);
-	            	console.log(command);
 
-					console.log('PREV CMD_RESULT: ');
-	                console.log(CMD_RESULT);
-	                
-	                setTimeout(function(){
-	                	sendTCPCmd(device_ip, 9999, command);
-		                if (CMD_RESULT !== undefined) {
-		                    term.echo(new String(CMD_RESULT));
-							
-							console.log('PREV CMD_RESULT: ');
-			                console.log(CMD_RESULT);
-		                }
-	                }, 1000);
+	            	console.log('TCP_DEVICE_SELECTED: ' + TCP_DEVICE_SELECTED)
+	            	console.log('SERIAL_DEVICE_SELECTED: ' + SERIAL_DEVICE_SELECTED)
+
+	            	if(TCP_DEVICE_SELECTED){
+		            	var device_ip = $('#device_ip').val()
+	                	sendTCPCmd(device_ip, 9999, command, function(arrayBufferResult){
+		                    _arrayBufferToString(arrayBufferResult, function(cmd_result){
+								term.echo(new String(cmd_result));
+		                    });
+	                	});
+                	}
+
+                	if(SERIAL_DEVICE_SELECTED){
+						//Get TinySpeak from LabView TCP server
+						sendTCPCmd(null, null, command.trim(), function(arrayBufferResult){
+							var uint8View  = new Uint8Array(arrayBufferResult);
+							var bufferTest = new ArrayBuffer(uint8View.length - 1)
+							var uint8test  = new Uint8Array(bufferTest)
+
+							for(var i = 0; i < uint8View.length - 1; i++){
+								uint8test[i] = uint8View[i];
+							}
+								
+							console.log('serial command: ');
+							console.log(uint8test);
+
+							var port = $('#serial_ports').val();
+							sendSerialCmd(port, bufferTest);
+						});
+                	}
 
 	            } catch(e) {
 	                term.error(new String(e));
