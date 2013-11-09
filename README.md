@@ -7,3 +7,5 @@ In the Extensions page, click on "Load unpacked extension" and navigate to the d
 The extension should now show up in the main list of extensions.
 
 To launch the BotSpeak Chrome extension, click "Launch".
+
+To get TinySpeak working (for Atmega/Arduino compatible devices), launch the TinySpeakServer.vi on labview and run it. This will create a local (127.0.0.1:9999) TCP server that the chrome extension will connect to. Chrome will send it botspeak commands over TCP, and the TinySpeakServer will then convert them to the correct bytecodes to send over serial.
