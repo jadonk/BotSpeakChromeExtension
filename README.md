@@ -1,5 +1,7 @@
 This is the BotSpeak Chrome Extension. You can send BotSpeak commands to a variety of devices using serial and TCP/IP connections.
 
+Before loading everything, connect all the devices you need to program to your USB ports. Otherwise you will have to restart the Chrome extension everytime you connect a new USB device.
+
 To load this in Chrome, got to Tools -> Extensions
 
 In the Extensions page, click on "Load unpacked extension" and navigate to the directory of the Extension and click "open"
