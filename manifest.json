@@ -1,6 +1,6 @@
 {
 	"manifest_version": 2,
-	"name": "BotSpeak Chrome Extension",
+	"name": "BotSpeak",
 	"description": "Use the BotSpeak Chrome Extension to interface and program your favorite devices.",
 	"version": "1.0",
 	"minimum_chrome_version": "24",
@@ -9,5 +9,10 @@
 		"background": {
 			"scripts": [ "main.js" ]
 		}
+	},
+	"icons": {
+		"16" : "images/botspeak_robot16x16.png",
+		"48" : "images/botspeak_robot48x48.png",
+		"128" : "images/botspeak_robot128x128.png"
 	}
 }
