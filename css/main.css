@@ -24,3 +24,9 @@
     float: left;
     margin-left: 10px;
 }
+
+#device_image{
+	padding-top: 10px;
+	height: 250px;
+	overflow: hidden;
+}

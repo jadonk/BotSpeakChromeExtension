@@ -4,46 +4,75 @@
  * @version 1.0
  */
 
-var DEVICE_IMAGES = {
-	'ARDUINO_UNO'      : 'images/arduino.jpg',
-	'BEAGLEBONE_BLACK' : 'images/beaglebone.jpg',
-	'PROTO_SNAP'       : 'images/protosnap.png',
-	'RASPBERRY_PI'     : 'images/rpi.jpg'
+var BOTSPEAK_DEVICES = {
+	'ARDUINO_UNO' : {
+		'name' : 'Arduino Uno',
+		'img'  : 'images/arduino.jpg',
+		'port' : ''
+	},
+	'BEAGLEBONE_BLACK' : {
+		'name' : 'Beaglebone Black',
+		'img'  : 'images/beaglebone.jpg',
+		'ip'   : ''
+	},
+	'LILLY_PAD' : {
+		'name' : 'Lilly Pad',
+		'img'  : 'images/lillypad.jpg',
+		'port' : ''
+	},
+	'PROTO_SNAP' : {
+		'name' : 'Sparkfun ProtoSnap',
+		'img'  : 'images/protosnap.png',
+		'port' : ''
+	},
+	'RASPBERRY_PI' : {
+		'name' : 'Raspberry Pi',
+		'img'  : 'images/rpi.jpg',
+		'ip'   : ''
+	},
+	'GENERIC_TCPIP' : {
+		'name' : 'Generic TCPIP Device',
+		'img'  : 'images/generic_tcpip.jpg',
+		'ip'   : ''
+	}
 };
 var TCP_DEVICE_SELECTED    = true; //Since the default is Raspberry Pi
 var SERIAL_DEVICE_SELECTED = false;
-var TCP_DEVICES    = ['BEAGLEBONE_BLACK', 'RASPBERRY_PI'];
-var SERIAL_DEVICES = ['ARDUINO_UNO', 'PROTO_SNAP'];
-var TCP_SUCCESS    = false;
-var SERIAL_TEST    = -1;
+var TCP_DEVICES    = ['BEAGLEBONE_BLACK', 'RASPBERRY_PI', 'GENERIC_TCPIP'];
+var SERIAL_DEVICES = ['ARDUINO_UNO', 'LILLY_PAD', 'PROTO_SNAP'];
 var CONNECTION_ID  = -1;
 var SOCKET_ID      = -1;
 var BOTSPEAK_VERSION = ['1.0', '9'];
 var SERIAL_PORTS = '';
-var CMD_RESULT   = '';
-var DEVICE = { 'IP': null, 'PORT': null};
 
 (function($){
 
  	$( document ).ready(function(){
 
- 		//Get the serial ports every 10 seconds in case thing get attached
- 		chrome.serial.getPorts(function(ports){
-
-			 SERIAL_PORTS = ports.filter(function(port) {
-			    return !port.match(/[Bb]luetooth/) && port.match(/\/dev\/tty/);
-			 });
-			 
-			 if( SERIAL_PORTS ){
-				 var port_options = ''
-
-				 SERIAL_PORTS.forEach(function(port){
-				 	port_options += '<option value="' + port + '">' + port + '</div>';
-				 })
-
-				 $('#serial_ports').html(port_options);
-			 }
+ 		//Append each device to the device_selection dropdown
+ 		var option_html = '';
+ 		$.each(BOTSPEAK_DEVICES, function(key, val){
+ 			option_html += '<option value="' + key + '">' + val.name + '</option>';
  		});
+ 		$('#device_selection').append(option_html);
+
+ 		//Get the serial ports every 5 seconds in case thing get attached
+ 		function getPorts(){
+			chrome.serial.getPorts(function(ports){
+				SERIAL_PORTS = ports.filter(function(port) {
+					return !port.match(/[Bb]luetooth/) && port.match(/\/dev\/tty/);
+				});
+				if( SERIAL_PORTS ){
+					var port_options = '';
+					SERIAL_PORTS.forEach(function(port){
+						port_options += '<option value="' + port + '">' + port + '</div>';
+					})
+					$('#serial_ports').html(port_options);
+				}
+			})
+		}
+ 		
+ 		getPorts();
 
 		/**
 		* Converts a string to an array buffer
@@ -128,9 +157,6 @@ var DEVICE = { 'IP': null, 'PORT': null};
 		 			console.log('version: ')
 		 			console.log(version)
 		 			if(  $.inArray(version, BOTSPEAK_VERSION) != -1 ){
-		 				TCP_SUCCESS = true;
-		 				DEVICE['IP']   = device_ip
-		 				DEVICE['PORT'] = device_port
 		 				$('#tcp_devices').append('<p style="color: green;">Connection successful! BotSpeak Version: ' + version + '</p>')
 		 			}else{
 		 				$('#tcp_devices').append('<p style="color: red;"> Connection Error: ' + version + '</p>')
@@ -192,7 +218,7 @@ var DEVICE = { 'IP': null, 'PORT': null};
  		//Show device info
 	 	$('#device_selection').change(function(){
 	 		var device  = $( this ).val();
-	 		var img_src = DEVICE_IMAGES[device];
+	 		var img_src = BOTSPEAK_DEVICES[device].img;
 	 		
 	 		//Show device image
 	 		$('#device_image').html('<img src="' + img_src + '" />');
@@ -260,7 +286,7 @@ var DEVICE = { 'IP': null, 'PORT': null};
 	        }
 	    }, {
 	        enabled: false,
-	        greetings: 'BotSpeak Interpreter',
+	        greetings: 'BotSpeak Terminal',
 	        name: 'botspeak_demo',
 	        height: 300,
 	        width: 400,

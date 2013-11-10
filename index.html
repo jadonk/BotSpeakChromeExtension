@@ -18,25 +18,42 @@
 	<section id="select_device">
 		<h1> Step 1: Select a device: </h1>
 		<select id="device_selection">
-			<option id="1" value="RASPBERRY_PI">Raspberry Pi</option>
-			<option id="2" value="BEAGLEBONE_BLACK">Beaglebone Black</option>
-			<option id="3" value="ARDUINO_UNO">Arduino Uno</option>
-			<option id="4" value="PROTO_SNAP">ProtoSnap</option>
 		</select>
 
-		<div id="device_image" style="hieght: 300px;"><img src="images/rpi.jpg" /></div>
+		<div id="device_image"><img src="images/arduino.jpg" /></div>
+		
+		<div id="connect_device">
+			<h1> Step 2: Connect to the device </h1>
+			<div id="tcp_devices" style="display: none;">Type in device IP address: <input id="device_ip" type="text" /><br /><button id="test_tcp_button">Test Connection</button></div>
+			<div id="serial_devices">USB Serial: <select id="serial_ports"></select><br /><button id="get_ports">Get Ports</button><button id="test_serial_button">Test Connection</button></div>
+			<div id="connection_status"></div>
+		</div>
+
 	</section>
 
-	<section id="connect_device">
-		<h1> Step 2: Connect to the device </h1>
-		<div id="tcp_devices">Type in device IP address: <input id="device_ip" type="text" /><button id="test_tcp_button">Test Connection</button></div>
-		<div id="serial_devices" style="display: none;">USB Serial: <select id="serial_ports"></select><button id="test_serial_button">Test Connection</button></div>
-		<div id="connection_status"></div>
-	</section>
+
 
 	<section id="botspeak_cmd">
 		<h1> Step 3: Code! </h1>
 		<div id="terminal"></div>
 	</section>
-
+<!--
+	<section id="code_sample">
+		<h1> Sample Code: </h1>
+		The below sample code will blink digital pin 13 three times:
+		<textarea id="arduino_blink">
+SET DIO[13], 1
+WAIT 1.2
+SET DIO[13], 0
+WAIT 1.2
+SET DIO[13], 1
+WAIT 1.2
+SET DIO[13], 0
+WAIT 1.2
+SET DIO[13], 1
+WAIT 1.2
+SET DIO[13], 0
+		</textarea>
+	</section>
+-->
 </body>
