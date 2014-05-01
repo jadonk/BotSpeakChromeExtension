@@ -19,6 +19,13 @@
 	width: 350px;
 }
 
+#code_samples{
+	float: left; 
+	display: inline; 
+	margin-left: 10px; 
+	width: 350px;
+}
+
 #botspeak_cmd{
     display: inline;
     float: left;
@@ -29,4 +36,11 @@
 	padding-top: 10px;
 	height: 250px;
 	overflow: hidden;
+}
+
+#botspeak_blink{
+	margin: 2px;
+	height: 285px;
+	width: 100%;
+	font-size: 14px;
 }
